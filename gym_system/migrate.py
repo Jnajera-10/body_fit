@@ -9,6 +9,7 @@ with application.app_context():
         conn.execute(text("ALTER TABLE payments ADD COLUMN IF NOT EXISTS shift VARCHAR(10) DEFAULT 'manana'"))
         conn.execute(text("ALTER TABLE payments ADD COLUMN IF NOT EXISTS cash_received FLOAT"))
         conn.execute(text("ALTER TABLE payments ADD COLUMN IF NOT EXISTS cash_change FLOAT"))
+        conn.execute(text("ALTER TABLE payments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP"))
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS cash_registers (
                 id SERIAL PRIMARY KEY,

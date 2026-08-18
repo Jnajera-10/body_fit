@@ -283,6 +283,7 @@ class PaymentService:
         para que el llamador pueda registrar el log de auditoría correspondiente.
         """
         payment.is_deleted = True
+        payment.deleted_at = datetime.now(BOGOTA)
 
         # El "ancla" es el client_id del pago principal (el que pagó):
         # si este pago YA es un espejo, su partner_client_id apunta al principal.
@@ -303,6 +304,39 @@ class PaymentService:
 
         for linked_payment in linked:
             linked_payment.is_deleted = True
+            linked_payment.deleted_at = payment.deleted_at
+
+        return linked
+
+    @staticmethod
+    def restore_payment(payment):
+        """Revierte la eliminación de un pago (y de sus espejos vinculados,
+        si fue eliminado junto con un Plan Pareja/Familiar), para que
+        vuelva a contar en reportes, caja y membresía activa.
+
+        Retorna la lista de pagos espejo restaurados (vacía si no aplica).
+        """
+        payment.is_deleted = False
+        payment.deleted_at = None
+
+        anchor_id = payment.partner_client_id or payment.client_id
+
+        linked = Payment.query.filter(
+            Payment.membership_id == payment.membership_id,
+            Payment.start_date    == payment.start_date,
+            Payment.end_date      == payment.end_date,
+            Payment.is_deleted    == True,
+            Payment.id            != payment.id,
+        ).filter(
+            db.or_(
+                Payment.client_id == anchor_id,
+                Payment.partner_client_id == anchor_id,
+            )
+        ).all()
+
+        for linked_payment in linked:
+            linked_payment.is_deleted = False
+            linked_payment.deleted_at = None
 
         return linked
 

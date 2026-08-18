@@ -14,6 +14,11 @@
         <a href="{{ url_for('payments.create') }}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i>Nuevo Pago
         </a>
+        {% if session.get('user_role') == 'admin' %}
+        <a href="{{ url_for('payments.deleted_list') }}" class="btn btn-outline-secondary" title="Ver pagos eliminados y restaurarlos">
+            <i class="fas fa-trash-restore me-1"></i>Papelera
+        </a>
+        {% endif %}
     </div>
 </div>
 
@@ -192,6 +197,11 @@
                     <p class="text-danger small mb-0">
                         <i class="fas fa-exclamation-triangle me-1"></i>
                         El pago se eliminará inmediatamente y quedará registrado en auditoría.
+                    </p>
+                    <p class="text-muted small mb-0 mt-1">
+                        <i class="fas fa-trash-restore me-1"></i>
+                        Si te equivocas, puedes restaurarlo después desde
+                        <a href="{{ url_for('payments.deleted_list') }}">Papelera</a>.
                     </p>
                 </div>
                 <div class="modal-footer">

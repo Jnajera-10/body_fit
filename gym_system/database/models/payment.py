@@ -26,6 +26,7 @@ class Payment(db.Model):
     payment_method   = db.Column(db.String(120), default='efectivo')
     notes            = db.Column(db.Text)
     is_deleted       = db.Column(db.Boolean, default=False)
+    deleted_at       = db.Column(db.DateTime, nullable=True)   # cuándo se eliminó (para poder restaurarlo)
     created_at       = db.Column(db.DateTime, default=lambda: datetime.now(BOGOTA))
 
     # ── Turno ─────────────────────────────────────────────────────────

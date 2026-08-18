@@ -338,6 +338,66 @@ class PaymentsController:
         return redirect(url_for('payments.index'))
 
     @staticmethod
+    def deleted_list():
+        """Papelera: pagos eliminados (soft delete), con opción de restaurar."""
+        page = request.args.get('page', 1, type=int)
+        pagination = (
+            Payment.query
+            .filter_by(is_deleted=True)
+            .order_by(Payment.deleted_at.desc())
+            .paginate(page=page, per_page=PER_PAGE, error_out=False)
+        )
+        return render_template(
+            'payments/deleted.html',
+            payments   = pagination.items,
+            pagination = pagination,
+        )
+
+    @staticmethod
+    def restore(payment_id):
+        """Cancela la eliminación de un pago: vuelve a contar en reportes/caja."""
+        payment = Payment.query.get_or_404(payment_id)
+        client  = payment.client
+
+        if not payment.is_deleted:
+            flash('Este pago no está eliminado.', 'warning')
+            return redirect(url_for('payments.deleted_list'))
+
+        mirrors = PaymentService.restore_payment(payment)
+        db.session.commit()
+        AuditService.log('restore', 'payments', payment.id, 'eliminado', 'restaurado')
+        for mirror in mirrors:
+            AuditService.log(
+                'restore', 'payments', mirror.id,
+                'eliminado',
+                f'restaurado (espejo vinculado al pago #{payment.id})',
+            )
+
+        try:
+            from services.notification_service import send_telegram_owner
+            hora = datetime.now(BOGOTA).strftime('%H:%M')
+            msg = (
+                f"♻️ *BODY-FIT GYM - Pago Restaurado*\n"
+                f"{'-'*28}\n"
+                f"👤 *Cliente:* {client.full_name if client else '-'}\n"
+                f"📋 *Plan:* {payment.membership.name if payment.membership else '-'}\n"
+                f"💰 *Monto:* ${'{:,.0f}'.format(payment.amount)} COP\n"
+                f"🔖 *Recibo N.:* {payment.id}\n"
+                f"🕑 *Hora:* {hora}\n"
+                f"{'-'*28}\n"
+                f"✅ Este pago vuelve a contar en reportes y caja."
+            )
+            send_telegram_owner(msg)
+        except Exception as exc:
+            logger.error(f'[WHATSAPP] Error notificando restauración: {exc}')
+
+        if mirrors:
+            flash(f'✅ Pago restaurado (incluyendo {len(mirrors)} registro(s) espejo vinculado(s)). Vuelve a contar en reportes.', 'success')
+        else:
+            flash('✅ Pago restaurado. Vuelve a contar en reportes.', 'success')
+        return redirect(url_for('payments.deleted_list'))
+
+    @staticmethod
     def extend_days(payment_id):
         """Agrega o quita días a la membresía de un cliente (modifica end_date)."""
         from datetime import timedelta

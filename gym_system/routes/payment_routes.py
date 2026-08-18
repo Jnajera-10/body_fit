@@ -11,6 +11,8 @@ payment_bp.add_url_rule('/<int:payment_id>/extend', 'extend', admin_required(Pay
 payment_bp.add_url_rule('/<int:payment_id>/freeze', 'freeze', admin_required(PaymentsController.freeze), methods=['POST'])
 payment_bp.add_url_rule('/<int:payment_id>/unfreeze', 'unfreeze', admin_required(PaymentsController.unfreeze), methods=['POST'])
 payment_bp.add_url_rule('/<int:payment_id>/delete', 'delete', admin_required(PaymentsController.delete), methods=['POST'])
+payment_bp.add_url_rule('/deleted', 'deleted_list', admin_required(PaymentsController.deleted_list))
+payment_bp.add_url_rule('/<int:payment_id>/restore', 'restore', admin_required(PaymentsController.restore), methods=['POST'])
 
 # ── Renovación rápida: precarga el formulario con cliente y plan ──
 payment_bp.add_url_rule('/renew', 'renew', login_required(PaymentsController.renew), methods=['GET', 'POST'])
